@@ -71,6 +71,11 @@ def github_search_count(query: str, headers: dict[str, str]) -> int:
     return int(data.get("total_count", 0)) if isinstance(data, dict) else 0
 
 
+def github_commit_search_count(query: str, headers: dict[str, str]) -> int:
+    data = request_json(f"{GITHUB_API}/search/commits?{urlencode({'q': query, 'per_page': 1})}", headers)
+    return int(data.get("total_count", 0)) if isinstance(data, dict) else 0
+
+
 def github_star_year_count(owner: str, repo: str, headers: dict[str, str]) -> int:
     star_headers = dict(headers)
     star_headers["Accept"] = "application/vnd.github.star+json"
@@ -249,25 +254,36 @@ def main() -> None:
         write_status_summary(OUT_DIR / "status-summary.svg", {"Stars": "Pending", "Commits": "Pending", "Pull Requests": "Pending", "Issues": "Pending"}, {"Stars": "Pending", "Commits": "Pending", "Pull Requests": "Pending", "Issues": "Pending"})
         return
     token_available = bool(os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN"))
-    default_file_limit = "300" if token_available else "0"
-    file_limit = int(os.getenv("ANALYTICS_COMMIT_FILE_LIMIT", default_file_limit))
+    enable_gitee = os.getenv("ENABLE_GITEE", "0") == "1"
+    deep_commit_scan = os.getenv("DEEP_COMMIT_SCAN", "0") == "1"
+    star_year_scan = os.getenv("STAR_YEAR_SCAN", "0") == "1"
+    file_limit = int(os.getenv("ANALYTICS_COMMIT_FILE_LIMIT", "120" if deep_commit_scan else "0"))
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     gh_headers = github_headers()
     gh_repos = list_github_repos(github_user, gh_headers)
-    gt_repos = list_gitee_repos(gitee_user)
+    gt_repos = list_gitee_repos(gitee_user) if enable_gitee else []
     repo_languages = Counter()
     repo_languages.update(repo.get("language") or "Unknown" for repo in gh_repos)
     repo_languages.update(repo.get("language") or "Unknown" for repo in gt_repos)
-    gh_commits_all, gh_commits_year, gh_commit_langs = github_commit_data(github_user, gh_repos, gh_headers, file_limit)
-    gt_commits_all, gt_commits_year, gt_commit_langs = gitee_commit_data(gitee_user, gt_repos, file_limit)
-    if not gh_commit_langs and not gt_commit_langs:
-        gh_commit_langs.update(repo.get("language") or "Unknown" for repo in gh_repos)
-        gt_commit_langs.update(repo.get("language") or "Unknown" for repo in gt_repos)
-    gitee_issue_repo_limit = int(os.getenv("GITEE_ISSUE_REPO_LIMIT", "20"))
-    gt_issues_all, gt_issues_year, gt_prs_all, gt_prs_year = gitee_issue_pr_counts(gitee_user, gt_repos[:gitee_issue_repo_limit])
+
+    if deep_commit_scan:
+        gh_commits_all, gh_commits_year, gh_commit_langs = github_commit_data(github_user, gh_repos, gh_headers, file_limit)
+    else:
+        gh_commits_all = github_commit_search_count(f"author:{github_user}", gh_headers)
+        gh_commits_year = github_commit_search_count(f"author:{github_user} author-date:{CURRENT_YEAR}-01-01..{CURRENT_YEAR}-12-31", gh_headers)
+        gh_commit_langs = Counter(repo.get("language") or "Unknown" for repo in gh_repos)
+
+    if enable_gitee:
+        gt_commits_all, gt_commits_year, gt_commit_langs = gitee_commit_data(gitee_user, gt_repos, file_limit)
+        gitee_issue_repo_limit = int(os.getenv("GITEE_ISSUE_REPO_LIMIT", "10"))
+        gt_issues_all, gt_issues_year, gt_prs_all, gt_prs_year = gitee_issue_pr_counts(gitee_user, gt_repos[:gitee_issue_repo_limit])
+    else:
+        gt_commits_all = gt_commits_year = gt_issues_all = gt_issues_year = gt_prs_all = gt_prs_year = 0
+        gt_commit_langs = Counter()
+
     gh_stars_all = sum(int(repo.get("stargazers_count", 0)) for repo in gh_repos)
     gt_stars_all = sum(int(repo.get("stargazers_count", 0) or repo.get("stars_count", 0) or 0) for repo in gt_repos)
-    gh_stars_year = sum(github_star_year_count(repo["owner"]["login"], repo["name"], gh_headers) for repo in gh_repos)
+    gh_stars_year = sum(github_star_year_count(repo["owner"]["login"], repo["name"], gh_headers) for repo in gh_repos) if star_year_scan else "N/A"
     gh_prs_all = github_search_count(f"author:{github_user} type:pr", gh_headers)
     gh_prs_year = github_search_count(f"author:{github_user} type:pr created:{CURRENT_YEAR}-01-01..{CURRENT_YEAR}-12-31", gh_headers)
     gh_issues_all = github_search_count(f"author:{github_user} type:issue", gh_headers)
@@ -279,7 +295,7 @@ def main() -> None:
         "Issues": gh_issues_all + gt_issues_all,
     }
     current_year = {
-        "Stars": f"{gh_stars_year}+",
+        "Stars": gh_stars_year,
         "Commits": gh_commits_year + gt_commits_year,
         "Pull Requests": gh_prs_year + gt_prs_year,
         "Issues": gh_issues_year + gt_issues_year,

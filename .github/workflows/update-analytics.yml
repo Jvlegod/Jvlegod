@@ -26,6 +26,9 @@ jobs:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           GITHUB_USERNAME: Jvlegod
           GITEE_USERNAME: Jvle
+          ENABLE_GITEE: "0"
+          DEEP_COMMIT_SCAN: "1"
+          STAR_YEAR_SCAN: "1"
 
       - name: Commit updated analytics
         uses: stefanzweifel/git-auto-commit-action@v5
