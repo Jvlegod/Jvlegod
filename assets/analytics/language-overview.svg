@@ -1,0 +1,14 @@
+<svg width="760" height="280" viewBox="0 0 760 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+<style>
+.title{font:700 18px Arial,sans-serif;fill:#111827}.sub{font:600 12px Arial,sans-serif;fill:#6b7280}.text{font:500 13px Arial,sans-serif;fill:#374151}.label{font:600 12px Arial,sans-serif;fill:#6b7280}.value{font:700 24px Arial,sans-serif;fill:#111827}.small{font:500 11px Arial,sans-serif;fill:#6b7280}
+@media (prefers-color-scheme: dark){.title{fill:#f9fafb}.sub{fill:#9ca3af}.text{fill:#d1d5db}.label{fill:#9ca3af}.value{fill:#f9fafb}.small{fill:#9ca3af}}
+</style>
+<rect x="0.5" y="0.5" width="759" height="279" rx="8" fill="transparent" stroke="#e5e7eb"/>
+<text x="32" y="40" class="title">Language Overview</text>
+<text x="32" y="62" class="sub">Repository languages and commit languages combined</text>
+<text x="32" y="108" class="text">No language data yet</text>
+<text x="560" y="94" class="label">Repositories</text>
+<text x="560" y="126" class="value">0</text>
+<text x="560" y="170" class="label">Commit sample</text>
+<text x="560" y="202" class="value">0</text>
+</svg>

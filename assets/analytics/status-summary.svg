@@ -1,0 +1,13 @@
+<svg width="760" height="240" viewBox="0 0 760 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+<style>
+.title{font:700 18px Arial,sans-serif;fill:#111827}.sub{font:600 12px Arial,sans-serif;fill:#6b7280}.text{font:500 13px Arial,sans-serif;fill:#374151}.label{font:600 12px Arial,sans-serif;fill:#6b7280}.value{font:700 24px Arial,sans-serif;fill:#111827}.small{font:500 11px Arial,sans-serif;fill:#6b7280}
+@media (prefers-color-scheme: dark){.title{fill:#f9fafb}.sub{fill:#9ca3af}.text{fill:#d1d5db}.label{fill:#9ca3af}.value{fill:#f9fafb}.small{fill:#9ca3af}}
+</style>
+<rect x="0.5" y="0.5" width="759" height="239" rx="8" fill="transparent" stroke="#e5e7eb"/>
+<text x="32" y="40" class="title">Status</text>
+<text x="32" y="62" class="sub">All-time and 2026 activity</text>
+<text x="32" y="126" class="label">All-time</text>
+<text x="32" y="188" class="label">2026</text>
+<line x1="32" y1="148" x2="728" y2="148" stroke="#e5e7eb"/>
+<text x="170" y="82" text-anchor="middle" class="label">Stars</text><text x="170" y="126" text-anchor="middle" class="value">Pending</text><text x="170" y="188" text-anchor="middle" class="value">Pending</text><text x="305" y="82" text-anchor="middle" class="label">Commits</text><text x="305" y="126" text-anchor="middle" class="value">Pending</text><text x="305" y="188" text-anchor="middle" class="value">Pending</text><text x="440" y="82" text-anchor="middle" class="label">Pull Requests</text><text x="440" y="126" text-anchor="middle" class="value">Pending</text><text x="440" y="188" text-anchor="middle" class="value">Pending</text><text x="575" y="82" text-anchor="middle" class="label">Issues</text><text x="575" y="126" text-anchor="middle" class="value">Pending</text><text x="575" y="188" text-anchor="middle" class="value">Pending</text>
+</svg>

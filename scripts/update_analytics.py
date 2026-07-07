@@ -181,68 +181,72 @@ def top_items(counter: Counter[str], limit: int = 7) -> list[tuple[str, int]]:
     return common
 
 
-def write_pie(path: Path, title: str, counter: Counter[str]) -> None:
-    items = top_items(counter)
+def chart_style() -> str:
+    return '''<style>
+.title{font:700 18px Arial,sans-serif;fill:#111827}.sub{font:600 12px Arial,sans-serif;fill:#6b7280}.text{font:500 13px Arial,sans-serif;fill:#374151}.label{font:600 12px Arial,sans-serif;fill:#6b7280}.value{font:700 24px Arial,sans-serif;fill:#111827}.small{font:500 11px Arial,sans-serif;fill:#6b7280}
+@media (prefers-color-scheme: dark){.title{fill:#f9fafb}.sub{fill:#9ca3af}.text{fill:#d1d5db}.label{fill:#9ca3af}.value{fill:#f9fafb}.small{fill:#9ca3af}}
+</style>'''
+
+
+def write_language_overview(path: Path, repo_counter: Counter[str], commit_counter: Counter[str]) -> None:
+    combined = repo_counter + commit_counter
+    items = top_items(combined)
     total = sum(value for _, value in items) or 1
+    bars = []
     y = 92
-    rows = []
-    for index, (name, value) in enumerate(items):
-        color = COLORS[index % len(COLORS)]
+    for index, (name, value) in enumerate(items[:7]):
         pct = value / total * 100
-        rows.append(f'<circle cx="284" cy="{y - 5}" r="5" fill="{color}"/><text x="298" y="{y}" class="text">{esc(name)} {pct:.1f}%</text>')
-        y += 24
-    if not counter:
-        rows.append('<text x="284" y="112" class="muted">No language data yet</text>')
-    offset = 0.0
-    slices = []
-    radius = 70
-    circumference = 2 * 3.14159 * radius
-    for index, (_, value) in enumerate(items):
-        length = value / total * circumference
-        slices.append(f'<circle r="{radius}" cx="130" cy="150" fill="transparent" stroke="{COLORS[index % len(COLORS)]}" stroke-width="38" stroke-dasharray="{length:.2f} {circumference - length:.2f}" stroke-dashoffset="{-offset:.2f}" transform="rotate(-90 130 150)"/>')
-        offset += length
-    path.write_text(f'''<svg width="560" height="310" viewBox="0 0 560 310" fill="none" xmlns="http://www.w3.org/2000/svg">
-<style>
-.title{{font:700 18px Arial,sans-serif;fill:#111827}}.text{{font:500 13px Arial,sans-serif;fill:#374151}}.muted{{font:500 13px Arial,sans-serif;fill:#6b7280}}
-@media (prefers-color-scheme: dark){{.title{{fill:#f9fafb}}.text{{fill:#d1d5db}}.muted{{fill:#9ca3af}}}}
-</style>
-<rect x="0.5" y="0.5" width="559" height="309" rx="8" fill="transparent" stroke="#e5e7eb"/>
-<text x="28" y="38" class="title">{esc(title)}</text>
-<g>{''.join(slices)}</g>
-<circle cx="130" cy="150" r="44" fill="transparent" stroke="#e5e7eb"/>
-<text x="284" y="62" class="title">Distribution</text>
-{''.join(rows)}
+        width = max(pct * 4.2, 3)
+        color = COLORS[index % len(COLORS)]
+        bars.append(f'<text x="32" y="{y}" class="text">{esc(name)}</text>')
+        bars.append(f'<rect x="150" y="{y - 12}" width="330" height="10" rx="5" fill="#e5e7eb" opacity="0.55"/>')
+        bars.append(f'<rect x="150" y="{y - 12}" width="{width:.1f}" height="10" rx="5" fill="{color}"/>')
+        bars.append(f'<text x="498" y="{y}" class="small">{pct:.1f}%</text>')
+        y += 28
+    if not combined:
+        bars.append('<text x="32" y="108" class="text">No language data yet</text>')
+    path.write_text(f'''<svg width="760" height="280" viewBox="0 0 760 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+{chart_style()}
+<rect x="0.5" y="0.5" width="759" height="279" rx="8" fill="transparent" stroke="#e5e7eb"/>
+<text x="32" y="40" class="title">Language Overview</text>
+<text x="32" y="62" class="sub">Repository languages and commit languages combined</text>
+{''.join(bars)}
+<text x="560" y="94" class="label">Repositories</text>
+<text x="560" y="126" class="value">{sum(repo_counter.values())}</text>
+<text x="560" y="170" class="label">Commit sample</text>
+<text x="560" y="202" class="value">{sum(commit_counter.values())}</text>
 </svg>
 ''', encoding="utf-8")
 
 
-def write_summary(path: Path, title: str, stats: dict[str, int | str]) -> None:
-    cells = []
-    for index, (label, value) in enumerate(stats.items()):
-        x = 30 + (index % 2) * 245
-        y = 88 + (index // 2) * 82
-        cells.append(f'<text x="{x}" y="{y}" class="label">{esc(label)}</text><text x="{x}" y="{y + 34}" class="value">{esc(value)}</text>')
-    path.write_text(f'''<svg width="560" height="250" viewBox="0 0 560 250" fill="none" xmlns="http://www.w3.org/2000/svg">
-<style>
-.title{{font:700 18px Arial,sans-serif;fill:#111827}}.label{{font:600 13px Arial,sans-serif;fill:#6b7280}}.value{{font:700 28px Arial,sans-serif;fill:#111827}}
-@media (prefers-color-scheme: dark){{.title{{fill:#f9fafb}}.label{{fill:#9ca3af}}.value{{fill:#f9fafb}}}}
-</style>
-<rect x="0.5" y="0.5" width="559" height="249" rx="8" fill="transparent" stroke="#e5e7eb"/>
-<text x="30" y="38" class="title">{esc(title)}</text>
-{''.join(cells)}
+def write_status_summary(path: Path, all_time: dict[str, int | str], current_year: dict[str, int | str]) -> None:
+    labels = ["Stars", "Commits", "Pull Requests", "Issues"]
+    cols = []
+    x = 170
+    for label in labels:
+        cols.append(f'<text x="{x}" y="82" text-anchor="middle" class="label">{esc(label)}</text>')
+        cols.append(f'<text x="{x}" y="126" text-anchor="middle" class="value">{esc(all_time[label])}</text>')
+        cols.append(f'<text x="{x}" y="188" text-anchor="middle" class="value">{esc(current_year[label])}</text>')
+        x += 135
+    path.write_text(f'''<svg width="760" height="240" viewBox="0 0 760 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+{chart_style()}
+<rect x="0.5" y="0.5" width="759" height="239" rx="8" fill="transparent" stroke="#e5e7eb"/>
+<text x="32" y="40" class="title">Status</text>
+<text x="32" y="62" class="sub">All-time and {CURRENT_YEAR} activity</text>
+<text x="32" y="126" class="label">All-time</text>
+<text x="32" y="188" class="label">{CURRENT_YEAR}</text>
+<line x1="32" y1="148" x2="728" y2="148" stroke="#e5e7eb"/>
+{''.join(cols)}
 </svg>
 ''', encoding="utf-8")
-
 
 def main() -> None:
     github_user = os.getenv("GITHUB_USERNAME", "Jvlegod")
     gitee_user = os.getenv("GITEE_USERNAME", "Jvle")
     if os.getenv("ANALYTICS_OFFLINE") == "1":
         OUT_DIR.mkdir(parents=True, exist_ok=True)
-        write_pie(OUT_DIR / "language-repos-pie.svg", "Repository Languages", Counter())
-        write_pie(OUT_DIR / "language-commits-pie.svg", "Commit Languages", Counter())
-        write_summary(OUT_DIR / "all-time-summary.svg", "All-time Activity", {"Stars": "Pending", "Commits": "Pending", "Pull Requests": "Pending", "Issues": "Pending"})
-        write_summary(OUT_DIR / "current-year-summary.svg", f"{CURRENT_YEAR} Activity", {"Stars": "Pending", "Commits": "Pending", "Pull Requests": "Pending", "Issues": "Pending"})
+        write_language_overview(OUT_DIR / "language-overview.svg", Counter(), Counter())
+        write_status_summary(OUT_DIR / "status-summary.svg", {"Stars": "Pending", "Commits": "Pending", "Pull Requests": "Pending", "Issues": "Pending"}, {"Stars": "Pending", "Commits": "Pending", "Pull Requests": "Pending", "Issues": "Pending"})
         return
     token_available = bool(os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN"))
     default_file_limit = "300" if token_available else "0"
@@ -268,20 +272,20 @@ def main() -> None:
     gh_prs_year = github_search_count(f"author:{github_user} type:pr created:{CURRENT_YEAR}-01-01..{CURRENT_YEAR}-12-31", gh_headers)
     gh_issues_all = github_search_count(f"author:{github_user} type:issue", gh_headers)
     gh_issues_year = github_search_count(f"author:{github_user} type:issue created:{CURRENT_YEAR}-01-01..{CURRENT_YEAR}-12-31", gh_headers)
-    write_pie(OUT_DIR / "language-repos-pie.svg", "Repository Languages", repo_languages)
-    write_pie(OUT_DIR / "language-commits-pie.svg", "Commit Languages", gh_commit_langs + gt_commit_langs)
-    write_summary(OUT_DIR / "all-time-summary.svg", "All-time Activity", {
+    all_time = {
         "Stars": gh_stars_all + gt_stars_all,
         "Commits": gh_commits_all + gt_commits_all,
         "Pull Requests": gh_prs_all + gt_prs_all,
         "Issues": gh_issues_all + gt_issues_all,
-    })
-    write_summary(OUT_DIR / "current-year-summary.svg", f"{CURRENT_YEAR} Activity", {
+    }
+    current_year = {
         "Stars": f"{gh_stars_year}+",
         "Commits": gh_commits_year + gt_commits_year,
         "Pull Requests": gh_prs_year + gt_prs_year,
         "Issues": gh_issues_year + gt_issues_year,
-    })
+    }
+    write_language_overview(OUT_DIR / "language-overview.svg", repo_languages, gh_commit_langs + gt_commit_langs)
+    write_status_summary(OUT_DIR / "status-summary.svg", all_time, current_year)
 
 
 if __name__ == "__main__":
