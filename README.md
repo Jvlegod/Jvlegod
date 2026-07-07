@@ -30,3 +30,15 @@ I love open source software!!!
 - Linux kernel
 - System monitoring
 - Security engineering
+
+## Development Analytics
+
+<p align="center">
+  <img src="./assets/analytics/language-repos-pie.svg" alt="Repository language distribution" />
+  <img src="./assets/analytics/language-commits-pie.svg" alt="Commit language distribution" />
+</p>
+
+<p align="center">
+  <img src="./assets/analytics/all-time-summary.svg" alt="All-time development summary" />
+  <img src="./assets/analytics/current-year-summary.svg" alt="Current year development summary" />
+</p>

@@ -1,0 +1,12 @@
+<svg width="560" height="310" viewBox="0 0 560 310" fill="none" xmlns="http://www.w3.org/2000/svg">
+<style>
+.title{font:700 18px Arial,sans-serif;fill:#111827}.text{font:500 13px Arial,sans-serif;fill:#374151}.muted{font:500 13px Arial,sans-serif;fill:#6b7280}
+@media (prefers-color-scheme: dark){.title{fill:#f9fafb}.text{fill:#d1d5db}.muted{fill:#9ca3af}}
+</style>
+<rect x="0.5" y="0.5" width="559" height="309" rx="8" fill="transparent" stroke="#e5e7eb"/>
+<text x="28" y="38" class="title">Commit Languages</text>
+<g></g>
+<circle cx="130" cy="150" r="44" fill="transparent" stroke="#e5e7eb"/>
+<text x="284" y="62" class="title">Distribution</text>
+<text x="284" y="112" class="muted">No language data yet</text>
+</svg>

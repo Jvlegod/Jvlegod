@@ -1,0 +1,9 @@
+<svg width="560" height="250" viewBox="0 0 560 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+<style>
+.title{font:700 18px Arial,sans-serif;fill:#111827}.label{font:600 13px Arial,sans-serif;fill:#6b7280}.value{font:700 28px Arial,sans-serif;fill:#111827}
+@media (prefers-color-scheme: dark){.title{fill:#f9fafb}.label{fill:#9ca3af}.value{fill:#f9fafb}}
+</style>
+<rect x="0.5" y="0.5" width="559" height="249" rx="8" fill="transparent" stroke="#e5e7eb"/>
+<text x="30" y="38" class="title">All-time Activity</text>
+<text x="30" y="88" class="label">Stars</text><text x="30" y="122" class="value">Pending</text><text x="275" y="88" class="label">Commits</text><text x="275" y="122" class="value">Pending</text><text x="30" y="170" class="label">Pull Requests</text><text x="30" y="204" class="value">Pending</text><text x="275" y="170" class="label">Issues</text><text x="275" y="204" class="value">Pending</text>
+</svg>
