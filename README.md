@@ -31,7 +31,11 @@ I love open source software!!!
 - System monitoring
 - Security engineering
 
-## Status
+## GITHUB/GITEE
+
+<p align="center">
+  <img src="https://img.shields.io/badge/analytics-updated%20every%20morning-0EA5E9?style=for-the-badge&logo=githubactions&logoColor=white" alt="Analytics updated every morning" />
+</p>
 
 <p align="center">
   <img src="./assets/analytics/language-overview.svg" alt="Language overview" />

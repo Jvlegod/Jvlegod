@@ -33,7 +33,7 @@ jobs:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           GITHUB_USERNAME: Jvlegod
           GITEE_USERNAME: Jvle
-          ENABLE_GITEE: "0"
+          ENABLE_GITEE: "1"
           DEEP_COMMIT_SCAN: "1"
           STAR_YEAR_SCAN: "1"
 
