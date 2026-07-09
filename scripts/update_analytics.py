@@ -17,13 +17,12 @@ OUT_DIR = ROOT / "assets" / "analytics"
 CURRENT_YEAR = datetime.now(timezone.utc).year
 GITHUB_API = "https://api.github.com"
 GITEE_API = "https://gitee.com/api/v5"
-LANG_BY_EXT = {
-    ".rs": "Rust", ".c": "C/C++", ".h": "C/C++", ".cc": "C/C++", ".cpp": "C/C++", ".hpp": "C/C++",
-    ".py": "Python", ".sh": "Shell", ".bash": "Shell", ".zsh": "Shell", ".go": "Go",
-    ".js": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript", ".jsx": "JavaScript",
-    ".java": "Java", ".lua": "Lua",
-}
 LANGUAGE_ALIASES = {"C": "C/C++", "C++": "C/C++"}
+IGNORED_LANGUAGES = {
+    "CSV", "Dockerfile", "EditorConfig", "Git Attributes", "Git Config", "Git Revision List",
+    "Ignore List", "INI", "JSON", "Markdown", "ReStructuredText", "SVG", "Text",
+    "TOML", "XML", "YAML",
+}
 
 
 def normalize_language(language: object) -> str:
@@ -98,11 +97,27 @@ def list_github_repos(username: str, headers: dict[str, str]) -> list[dict[str, 
     return [repo for repo in repos if isinstance(repo, dict) and not repo.get("fork")]
 
 
-def github_commit_data(username: str, repos: list[dict[str, Any]], headers: dict[str, str], file_limit: int) -> tuple[int, int, Counter[str]]:
+def add_language(counter: Counter[str], language: object, amount: int) -> None:
+    name = normalize_language(language)
+    if name not in IGNORED_LANGUAGES:
+        counter[name] += amount
+
+
+def github_repo_languages(repos: list[dict[str, Any]], headers: dict[str, str]) -> Counter[str]:
+    languages: Counter[str] = Counter()
+    for repo in repos:
+        owner = repo["owner"]["login"]
+        name = repo["name"]
+        data = request_json(f"{GITHUB_API}/repos/{owner}/{name}/languages", headers)
+        if isinstance(data, dict):
+            for language, bytes_count in data.items():
+                add_language(languages, language, int(bytes_count))
+    return languages
+
+
+def github_commit_data(username: str, repos: list[dict[str, Any]], headers: dict[str, str]) -> tuple[int, int]:
     all_time = 0
     this_year = 0
-    languages: Counter[str] = Counter()
-    inspected = 0
     year_start = f"{CURRENT_YEAR}-01-01T00:00:00Z"
     for repo in repos:
         owner = repo["owner"]["login"]
@@ -111,17 +126,7 @@ def github_commit_data(username: str, repos: list[dict[str, Any]], headers: dict
         year_commits = paged(f"{GITHUB_API}/repos/{owner}/{name}/commits?author={quote(username)}&since={year_start}", headers)
         all_time += len(commits)
         this_year += len(year_commits)
-        for commit in commits:
-            if inspected >= file_limit:
-                break
-            sha = commit.get("sha")
-            detail = request_json(f"{GITHUB_API}/repos/{owner}/{name}/commits/{sha}", headers) if sha else None
-            inspected += 1
-            for file_info in (detail or {}).get("files", []):
-                lang = LANG_BY_EXT.get(Path(file_info.get("filename", "")).suffix.lower())
-                if lang:
-                    languages[lang] += max(int(file_info.get("changes", 1)), 1)
-    return all_time, this_year, languages
+    return all_time, this_year
 
 
 def gitee_token_query() -> str:
@@ -141,11 +146,23 @@ def list_gitee_repos(username: str) -> list[dict[str, Any]]:
     return [repo for repo in repos if isinstance(repo, dict) and not repo.get("fork")]
 
 
-def gitee_commit_data(username: str, repos: list[dict[str, Any]], file_limit: int) -> tuple[int, int, Counter[str]]:
+def gitee_repo_languages(username: str, repos: list[dict[str, Any]]) -> Counter[str]:
+    languages: Counter[str] = Counter()
+    for repo in repos:
+        owner = repo.get("namespace", {}).get("path") or username
+        name = repo.get("path") or repo.get("name")
+        data = request_json(gitee_url(f"/repos/{owner}/{name}/languages"))
+        if isinstance(data, dict) and data:
+            for language, bytes_count in data.items():
+                add_language(languages, language, int(bytes_count))
+        else:
+            add_language(languages, repo.get("language"), 1)
+    return languages
+
+
+def gitee_commit_data(username: str, repos: list[dict[str, Any]]) -> tuple[int, int]:
     all_time = 0
     this_year = 0
-    languages: Counter[str] = Counter()
-    inspected = 0
     for repo in repos:
         owner = repo.get("namespace", {}).get("path") or username
         name = repo.get("path") or repo.get("name")
@@ -155,16 +172,7 @@ def gitee_commit_data(username: str, repos: list[dict[str, Any]], file_limit: in
             created = commit.get("created_at") or commit.get("commit", {}).get("author", {}).get("date", "")
             if str(created).startswith(str(CURRENT_YEAR)):
                 this_year += 1
-            if inspected >= file_limit:
-                break
-            sha = commit.get("sha")
-            detail = request_json(gitee_url(f"/repos/{owner}/{name}/commits/{sha}")) if sha else None
-            inspected += 1
-            for file_info in (detail or {}).get("files", []):
-                lang = LANG_BY_EXT.get(Path(file_info.get("filename", "")).suffix.lower())
-                if lang:
-                    languages[lang] += max(int(file_info.get("changes", 1)), 1)
-    return all_time, this_year, languages
+    return all_time, this_year
 
 
 def gitee_issue_pr_counts(username: str, repos: list[dict[str, Any]]) -> tuple[int, int, int, int]:
@@ -200,8 +208,8 @@ def chart_style() -> str:
 </style>'''
 
 
-def write_language_overview(path: Path, repo_counter: Counter[str], commit_counter: Counter[str]) -> None:
-    combined = repo_counter + commit_counter
+def write_language_overview(path: Path, repo_counter: Counter[str]) -> None:
+    combined = repo_counter
     items = top_items(combined)
     total = sum(value for _, value in items) or 1
     bars = []
@@ -221,12 +229,12 @@ def write_language_overview(path: Path, repo_counter: Counter[str], commit_count
 {chart_style()}
 <rect x="0.5" y="0.5" width="759" height="279" rx="8" fill="transparent" stroke="#e5e7eb"/>
 <text x="32" y="40" class="title">Language Overview</text>
-<text x="32" y="62" class="sub">Repository languages and commit languages combined</text>
+<text x="32" y="62" class="sub">Repository language byte totals, excluding docs and config</text>
 {''.join(bars)}
-<text x="560" y="94" class="label">Repositories</text>
+<text x="560" y="94" class="label">Code bytes</text>
 <text x="560" y="126" class="value">{sum(repo_counter.values())}</text>
-<text x="560" y="170" class="label">Commit sample</text>
-<text x="560" y="202" class="value">{sum(commit_counter.values())}</text>
+<text x="560" y="170" class="label">Languages</text>
+<text x="560" y="202" class="value">{len(repo_counter)}</text>
 </svg>
 ''', encoding="utf-8")
 
@@ -257,36 +265,33 @@ def main() -> None:
     gitee_user = os.getenv("GITEE_USERNAME", "Jvle")
     if os.getenv("ANALYTICS_OFFLINE") == "1":
         OUT_DIR.mkdir(parents=True, exist_ok=True)
-        write_language_overview(OUT_DIR / "language-overview.svg", Counter(), Counter())
+        write_language_overview(OUT_DIR / "language-overview.svg", Counter())
         write_status_summary(OUT_DIR / "status-summary.svg", {"Stars": "Pending", "Commits": "Pending", "Pull Requests": "Pending", "Issues": "Pending"}, {"Stars": "Pending", "Commits": "Pending", "Pull Requests": "Pending", "Issues": "Pending"})
         return
     token_available = bool(os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN"))
     enable_gitee = os.getenv("ENABLE_GITEE", "0") == "1"
     deep_commit_scan = os.getenv("DEEP_COMMIT_SCAN", "0") == "1"
     star_year_scan = os.getenv("STAR_YEAR_SCAN", "0") == "1"
-    file_limit = int(os.getenv("ANALYTICS_COMMIT_FILE_LIMIT", "120" if deep_commit_scan else "0"))
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     gh_headers = github_headers()
     gh_repos = list_github_repos(github_user, gh_headers)
     gt_repos = list_gitee_repos(gitee_user) if enable_gitee else []
-    repo_languages = Counter()
-    repo_languages.update(normalize_language(repo.get("language")) for repo in gh_repos)
-    repo_languages.update(normalize_language(repo.get("language")) for repo in gt_repos)
+    repo_languages = github_repo_languages(gh_repos, gh_headers)
+    repo_languages.update(gitee_repo_languages(gitee_user, gt_repos))
 
     if deep_commit_scan:
-        gh_commits_all, gh_commits_year, gh_commit_langs = github_commit_data(github_user, gh_repos, gh_headers, file_limit)
+        gh_commits_all, gh_commits_year = github_commit_data(github_user, gh_repos, gh_headers)
     else:
         gh_commits_all = github_commit_search_count(f"author:{github_user}", gh_headers)
         gh_commits_year = github_commit_search_count(f"author:{github_user} author-date:{CURRENT_YEAR}-01-01..{CURRENT_YEAR}-12-31", gh_headers)
-        gh_commit_langs = Counter(normalize_language(repo.get("language")) for repo in gh_repos)
+
 
     if enable_gitee:
-        gt_commits_all, gt_commits_year, gt_commit_langs = gitee_commit_data(gitee_user, gt_repos, file_limit)
+        gt_commits_all, gt_commits_year = gitee_commit_data(gitee_user, gt_repos)
         gitee_issue_repo_limit = int(os.getenv("GITEE_ISSUE_REPO_LIMIT", "10"))
         gt_issues_all, gt_issues_year, gt_prs_all, gt_prs_year = gitee_issue_pr_counts(gitee_user, gt_repos[:gitee_issue_repo_limit])
     else:
         gt_commits_all = gt_commits_year = gt_issues_all = gt_issues_year = gt_prs_all = gt_prs_year = 0
-        gt_commit_langs = Counter()
 
     gh_stars_all = sum(int(repo.get("stargazers_count", 0)) for repo in gh_repos)
     gt_stars_all = sum(int(repo.get("stargazers_count", 0) or repo.get("stars_count", 0) or 0) for repo in gt_repos)
@@ -307,7 +312,7 @@ def main() -> None:
         "Pull Requests": gh_prs_year + gt_prs_year,
         "Issues": gh_issues_year + gt_issues_year,
     }
-    write_language_overview(OUT_DIR / "language-overview.svg", repo_languages, gh_commit_langs + gt_commit_langs)
+    write_language_overview(OUT_DIR / "language-overview.svg", repo_languages)
     write_status_summary(OUT_DIR / "status-summary.svg", all_time, current_year)
 
 
