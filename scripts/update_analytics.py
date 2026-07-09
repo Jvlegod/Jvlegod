@@ -18,11 +18,10 @@ CURRENT_YEAR = datetime.now(timezone.utc).year
 GITHUB_API = "https://api.github.com"
 GITEE_API = "https://gitee.com/api/v5"
 LANG_BY_EXT = {
-    ".rs": "Rust", ".c": "C", ".h": "C/C++", ".cc": "C++", ".cpp": "C++", ".hpp": "C++",
+    ".rs": "Rust", ".c": "C/C++", ".h": "C/C++", ".cc": "C/C++", ".cpp": "C/C++", ".hpp": "C/C++",
     ".py": "Python", ".sh": "Shell", ".bash": "Shell", ".zsh": "Shell", ".go": "Go",
     ".js": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript", ".jsx": "JavaScript",
-    ".java": "Java", ".lua": "Lua", ".md": "Markdown", ".yml": "YAML", ".yaml": "YAML",
-    ".toml": "TOML", ".json": "JSON",
+    ".java": "Java", ".lua": "Lua",
 }
 COLORS = ["#2563eb", "#16a34a", "#dc2626", "#9333ea", "#ea580c", "#0891b2", "#4f46e5", "#65a30d"]
 
