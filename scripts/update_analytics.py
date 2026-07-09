@@ -97,10 +97,28 @@ def list_github_repos(username: str, headers: dict[str, str]) -> list[dict[str, 
     return [repo for repo in repos if isinstance(repo, dict) and not repo.get("fork")]
 
 
-def add_language(counter: Counter[str], language: object, amount: int) -> None:
+def language_amount(value: object) -> int:
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, int | float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(float(value))
+        except ValueError:
+            return 0
+    if isinstance(value, list):
+        return sum(language_amount(item) for item in value)
+    if isinstance(value, dict):
+        return sum(language_amount(item) for item in value.values())
+    return 0
+
+
+def add_language(counter: Counter[str], language: object, amount: object) -> None:
     name = normalize_language(language)
-    if name not in IGNORED_LANGUAGES:
-        counter[name] += amount
+    value = language_amount(amount)
+    if name not in IGNORED_LANGUAGES and value > 0:
+        counter[name] += value
 
 
 def github_repo_languages(repos: list[dict[str, Any]], headers: dict[str, str]) -> Counter[str]:
@@ -111,7 +129,7 @@ def github_repo_languages(repos: list[dict[str, Any]], headers: dict[str, str]) 
         data = request_json(f"{GITHUB_API}/repos/{owner}/{name}/languages", headers)
         if isinstance(data, dict):
             for language, bytes_count in data.items():
-                add_language(languages, language, int(bytes_count))
+                add_language(languages, language, bytes_count)
     return languages
 
 
@@ -154,7 +172,7 @@ def gitee_repo_languages(username: str, repos: list[dict[str, Any]]) -> Counter[
         data = request_json(gitee_url(f"/repos/{owner}/{name}/languages"))
         if isinstance(data, dict) and data:
             for language, bytes_count in data.items():
-                add_language(languages, language, int(bytes_count))
+                add_language(languages, language, bytes_count)
         else:
             add_language(languages, repo.get("language"), 1)
     return languages
