@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./assets/profile.jpg" alt="Profile image" width="180" />
+  <img src="https://www.jvle.top/files/github/profiles/profile.jpg" alt="Profile image" width="180" />
 
   # Hi, I'm Jvle(Keke Ming)
 
@@ -38,9 +38,9 @@ I love open source software!!!
 </p>
 
 <p align="center">
-  <img src="./assets/analytics/language-overview.svg" alt="Language overview" />
+  <img src="https://www.jvle.top/files/github/profiles/analytics/language-overview.svg" alt="Language overview" />
 </p>
 
 <p align="center">
-  <img src="./assets/analytics/status-summary.svg" alt="Development status summary" />
+  <img src="https://www.jvle.top/files/github/profiles/analytics/status-summary.svg" alt="Development status summary" />
 </p>
