@@ -45,10 +45,15 @@ jobs:
           SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
           SERVER_PROFILE_PATH: ${{ secrets.SERVER_PROFILE_PATH }}
         run: |
+          if [[ "$SERVER_PROFILE_PATH" != /* ]]; then
+            echo "SERVER_PROFILE_PATH must be an absolute server path"
+            exit 1
+          fi
           mkdir -p ~/.ssh
           printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -p "${SERVER_PORT:-22}" "$SERVER_HOST" >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -p "${SERVER_PORT:-22}" "$SERVER_USER@$SERVER_HOST" "mkdir -p '$SERVER_PROFILE_PATH'"
           rsync -az --delete \
             -e "ssh -i ~/.ssh/deploy_key -p ${SERVER_PORT:-22}" \
             assets/ "$SERVER_USER@$SERVER_HOST:$SERVER_PROFILE_PATH/"
