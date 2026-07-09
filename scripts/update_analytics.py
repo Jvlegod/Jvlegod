@@ -23,6 +23,14 @@ LANG_BY_EXT = {
     ".js": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript", ".jsx": "JavaScript",
     ".java": "Java", ".lua": "Lua",
 }
+LANGUAGE_ALIASES = {"C": "C/C++", "C++": "C/C++"}
+
+
+def normalize_language(language: object) -> str:
+    name = str(language or "Unknown")
+    return LANGUAGE_ALIASES.get(name, name)
+
+
 COLORS = ["#2563eb", "#16a34a", "#dc2626", "#9333ea", "#ea580c", "#0891b2", "#4f46e5", "#65a30d"]
 
 
@@ -200,7 +208,7 @@ def write_language_overview(path: Path, repo_counter: Counter[str], commit_count
     y = 92
     for index, (name, value) in enumerate(items[:7]):
         pct = value / total * 100
-        width = max(pct * 4.2, 3)
+        width = max(pct / 100 * 330, 3)
         color = COLORS[index % len(COLORS)]
         bars.append(f'<text x="32" y="{y}" class="text">{esc(name)}</text>')
         bars.append(f'<rect x="150" y="{y - 12}" width="330" height="10" rx="5" fill="#e5e7eb" opacity="0.55"/>')
@@ -262,15 +270,15 @@ def main() -> None:
     gh_repos = list_github_repos(github_user, gh_headers)
     gt_repos = list_gitee_repos(gitee_user) if enable_gitee else []
     repo_languages = Counter()
-    repo_languages.update(repo.get("language") or "Unknown" for repo in gh_repos)
-    repo_languages.update(repo.get("language") or "Unknown" for repo in gt_repos)
+    repo_languages.update(normalize_language(repo.get("language")) for repo in gh_repos)
+    repo_languages.update(normalize_language(repo.get("language")) for repo in gt_repos)
 
     if deep_commit_scan:
         gh_commits_all, gh_commits_year, gh_commit_langs = github_commit_data(github_user, gh_repos, gh_headers, file_limit)
     else:
         gh_commits_all = github_commit_search_count(f"author:{github_user}", gh_headers)
         gh_commits_year = github_commit_search_count(f"author:{github_user} author-date:{CURRENT_YEAR}-01-01..{CURRENT_YEAR}-12-31", gh_headers)
-        gh_commit_langs = Counter(repo.get("language") or "Unknown" for repo in gh_repos)
+        gh_commit_langs = Counter(normalize_language(repo.get("language")) for repo in gh_repos)
 
     if enable_gitee:
         gt_commits_all, gt_commits_year, gt_commit_langs = gitee_commit_data(gitee_user, gt_repos, file_limit)
