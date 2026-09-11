@@ -38,11 +38,11 @@ I love open source software!!!
 </p>
 
 <p align="center">
-  <img src="http://www.jvle.top/files/github/profiles/analytics/language-overview.svg?v=34516470629-1" alt="Language overview" />
+  <img src="http://www.jvle.top/files/github/profiles/analytics/language-overview.svg?v=34635550472-1" alt="Language overview" />
 </p>
 
 <p align="center">
-  <img src="http://www.jvle.top/files/github/profiles/analytics/status-summary.svg?v=34516470629-1" alt="Development status summary" />
+  <img src="http://www.jvle.top/files/github/profiles/analytics/status-summary.svg?v=34635550472-1" alt="Development status summary" />
 </p>
 
 ## CONTACT ME
